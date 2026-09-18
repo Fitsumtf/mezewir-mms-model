@@ -125,3 +125,15 @@ Capital Goods Finance Company and the Development Bank of Ethiopia lease
 financing window, both of which have financed agricultural mechanisation and
 favour locally manufactured equipment. Confirm current terms directly, as
 published information may be out of date.
+
+## Consistency note
+
+The promotion ladder and the co-financing section use the same `FinancePlan`.
+When an operator is promoted, their accumulated savings become the equity on
+their own machine and the remaining principal is split between the partner fund
+and the lease facility in the same proportion as the programme-level plan. This
+means every figure in the README, the charts and the CSV outputs rests on one
+set of financing assumptions rather than two.
+
+Calling `promotion_ladder(p)` without a plan still returns the face-value path,
+which is useful for isolating the effect of financing cost on its own.

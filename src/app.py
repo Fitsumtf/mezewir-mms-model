@@ -190,14 +190,15 @@ with tab2:
     st.subheader("An operator should not stay an operator")
     st.write(f"A young person works {min_service} seasons as an operator, saving "
              f"{save_rate:.0%} of wages. The owner recommends them, credit is approved, "
-             "and those savings become the down payment on their own machine.")
+             "and those savings become the equity on their own machine. The cost of "
+             "that credit is charged against their income on the same terms set in the sidebar.")
 
-    lad = promotion_ladder(p, promote_after=min_service, horizon=horizon)
+    lad = promotion_ladder(p, promote_after=min_service, horizon=horizon, plan=plan)
     fig, ax = plt.subplots(figsize=(11, 4.8))
     ax.plot(lad.year, lad.stay_operator_gross_etb, marker="s", color=MUT, lw=2.2, ms=7,
             label="Stays an operator (wages only)")
     ax.plot(lad.year, lad.promoted_total_etb, marker="o", color=AMBER, lw=3.0, ms=8,
-            label=f"Promoted to owner in season {min_service + 1}")
+            label=f"Promoted in season {min_service + 1}, cost of credit included")
     ax.axhline(MILLION, color=NAVY, ls="--", lw=1.4, label="1,000,000 ETB")
     ax.axvspan(0.5, min_service + 0.5, color=STEEL, alpha=0.08)
     style(ax, "Season", "Cumulative money held (ETB)")

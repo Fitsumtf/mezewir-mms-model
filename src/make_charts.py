@@ -14,6 +14,7 @@ from matplotlib.patches import Patch
 
 from mms_growth_model import Params, simulate, scenario_table, promotion_ladder, \
                              external_needed_for_target, MILLION
+from financing import FinancePlan
 from dataclasses import asdict
 
 HERE = Path(__file__).resolve().parent
@@ -51,16 +52,17 @@ def save(fig, name, foot, left=0.105):
 
 
 p = Params()
+plan = FinancePlan()          # placeholder lease terms, see financing.py
 yrs = np.arange(1, 11)
 
 # ---------- G1: the promotion ladder ----------
-lad = promotion_ladder(p)
+lad = promotion_ladder(p, plan=plan)
 fig, ax = frame("An operator should not stay an operator",
                 "Two futures for the same young person. Path B serves two seasons, is recommended by the owner, then receives credit for a machine.")
 ax.plot(lad.year, lad.stay_operator_gross_etb, marker="s", color=MUT, lw=2.4, ms=8,
         label="Path A: stays an operator (wages only)")
 ax.plot(lad.year, lad.promoted_total_etb, marker="o", color=AMBER, lw=3.2, ms=9,
-        label="Path B: promoted to owner in season 3")
+        label="Path B: promoted to owner in season 3, credit costed")
 ax.axhline(MILLION, color=NAVY, ls="--", lw=1.6, label="1,000,000 ETB threshold")
 ax.axvspan(0.5, 2.5, color=STEEL, alpha=0.09)
 ax.text(1.5, 3.15e6, "serving as\nan operator", ha="center", fontsize=11, color=STEEL, fontweight="bold")
@@ -73,8 +75,10 @@ ax.set_xticks(yrs)
 ax.yaxis.set_major_formatter(FMT)
 ax.legend(loc="upper left")
 save(fig, "G1_promotion_ladder.png",
-     "By season 7 the promoted operator holds 2,040,000 ETB against 175,000 ETB for the one who stayed.\n"
-     "That is about 12 times more, and they own a 400,000 ETB machine outright.")
+     f"By season 7 the promoted operator holds {lad.promoted_total_etb.iloc[6]:,.0f} ETB against "
+     f"{lad.stay_operator_gross_etb.iloc[6]:,.0f} ETB for the one who stayed.\n"
+     f"That is about {lad.promoted_total_etb.iloc[6]/lad.stay_operator_gross_etb.iloc[6]:.0f} times more, "
+     "and they own a 400,000 ETB machine outright.")
 
 # ---------- G2: fleet growth under three financing levels ----------
 fig, ax = frame("A pilot of 10 machines cannot reach 40% on its own",

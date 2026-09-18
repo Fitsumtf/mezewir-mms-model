@@ -87,13 +87,20 @@ ladder. Stretching the same target to year 10 cuts that to about 25 a year.
 | Season | Path A: stays an operator | Path B: promoted in season 3 |
 |---|---|---|
 | 2 | 50,000 ETB | 50,000 ETB |
-| 3 | 75,000 ETB | 333,000 ETB |
-| 5 | 125,000 ETB | 1,104,620 ETB |
-| 7 | 175,000 ETB | 2,040,365 ETB |
-| 10 | 250,000 ETB | 3,363,688 ETB |
+| 3 | 75,000 ETB | 353,803 ETB |
+| 5 | 125,000 ETB | 1,043,213 ETB |
+| 7 | 175,000 ETB | 1,978,958 ETB |
+| 10 | 250,000 ETB | 3,302,281 ETB |
 
 Path B passes one million birr in season 5 and ends season 10 with about
 thirteen times the money of Path A, plus a machine owned outright.
+
+These figures **include the cost of credit**. The operator's savings become the
+equity on their machine and the balance is financed on the terms in the
+co-financing section below. Path B is ahead of the no-financing case in seasons
+3 and 4, because spreading the lease over three seasons costs less per season
+than repaying at face value, then settles about 61,000 ETB behind it by season
+10. The milestone season does not change.
 
 ---
 
@@ -131,6 +138,8 @@ of the harvest.
 
 > The lease rate and tenor are **illustrative placeholders**, not quoted terms.
 > Replace them in `financing.py` or on the sidebar once a lessor quotes.
+> These same terms are applied to the promotion ladder above, so every figure
+> in this README uses one consistent set of financing assumptions.
 
 At these placeholder terms the lease costs 86,870 ETB a season, total interest
 is 60,610 ETB, and the cost of capital is about 15 percent of the machine price.

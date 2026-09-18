@@ -32,6 +32,8 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
+from financing import FinancePlan, wealth_path_financed
+
 ETB_PER_USD = 170.0
 MILLION = 1_000_000.0
 
@@ -347,7 +349,8 @@ def scenario_table(p: Params, seed_machines: int = 10) -> pd.DataFrame:
 # --------------------------------------------------------------------------- #
 #  The promotion ladder, from the operator's point of view
 # --------------------------------------------------------------------------- #
-def promotion_ladder(p: Params, promote_after: int = 2, horizon: int = 10) -> pd.DataFrame:
+def promotion_ladder(p: Params, promote_after: int = 2, horizon: int = 10,
+                     plan: "FinancePlan | None" = None) -> pd.DataFrame:
     """
     Compare two futures for the same young person.
 
@@ -355,12 +358,37 @@ def promotion_ladder(p: Params, promote_after: int = 2, horizon: int = 10) -> pd
     Path B: serves `promote_after` seasons, is recommended by the owner, receives
             credit, and runs a machine of their own from then on.
 
+    Pass a `FinancePlan` to charge the real cost of that credit. Leave it as
+    None to see the path with no financing cost.
+
     The savings accumulated as an operator become the down payment, which
     shortens the repayment period on their machine.
     """
     wage = p.operator_earnings_per_season
     saved = wage * p.operator_savings_rate * promote_after
-    owner_curve = wealth_path(horizon, p, down_payment=saved)
+
+    if plan is None:
+        # no financing cost: the machine is repaid at face value
+        owner_curve = wealth_path(horizon, p, down_payment=saved)
+    else:
+        # The operator's savings become the equity on their own machine. The
+        # remaining principal is split between the partner fund and the lease
+        # in the same proportion as the programme-level plan, so the ladder and
+        # the co-financing section use one consistent set of assumptions.
+        eq = min(saved / p.machine_price, 1.0)
+        rest = 1.0 - eq
+        denom = plan.partner_fund_share + plan.lease_share
+        pf = rest * (plan.partner_fund_share / denom) if denom else 0.0
+        personal = FinancePlan(
+            machine_price=p.machine_price,
+            youth_equity_share=eq, partner_fund_share=pf, lease_share=rest - pf,
+            lease_rate=plan.lease_rate,
+            lease_tenor_seasons=plan.lease_tenor_seasons,
+            partner_tenor_seasons=plan.partner_tenor_seasons,
+            grace_seasons=plan.grace_seasons,
+        )
+        owner_curve = wealth_path_financed(
+            horizon, lambda age: season_net(age, p), personal)
 
     rows = []
     for year in range(1, horizon + 1):
