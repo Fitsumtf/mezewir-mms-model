@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.DS_Store
+.vscode/
+.idea/
+
+# keep the proposal and any commercial documents out of version control
+*.docx
+*.pptx
+*.pdf
+private/
