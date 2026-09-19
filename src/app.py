@@ -176,12 +176,37 @@ with tab1:
 
         sm = seasons_to_threshold(f, plan)
         su = next((i + 1 for i, v in enumerate(unf) if v >= MILLION), None)
-        k = st.columns(2)
+        gap = fin[-1] - unf[-1]
+        k = st.columns(3)
         k[0].metric("Millionaire season, financed", sm if sm else "beyond horizon")
         k[1].metric("Without financing cost", su if su else "beyond horizon")
+        k[2].metric(f"Net cost by season {horizon}", f"{gap:,.0f} ETB",
+                    delta=f"{gap / max(abs(unf[-1]), 1):.1%} of wealth",
+                    delta_color="inverse")
+
         if sm and su and sm > su:
             st.info(f"Financing cost delays the milestone by {sm - su} season(s). "
                     f"Interest over the life of the facility is {s['total_interest']:,.0f} ETB.")
+        elif sm and su:
+            st.info(f"Financing cost does not change the milestone season. "
+                    f"Interest over the life of the facility is {s['total_interest']:,.0f} ETB.")
+
+        with st.expander("See the difference on its own"):
+            st.caption("The two lines above sit almost on top of each other, so the effect "
+                       "of financing is hard to see. This is the gap between them.")
+            d = np.array(fin) - np.array(unf)
+            fig2, ax2 = plt.subplots(figsize=(7, 3.0))
+            ax2.bar(yrs, d, 0.55,
+                    color=[STEEL if v >= 0 else AMBER for v in d],
+                    edgecolor=NAVY, lw=0.6)
+            ax2.axhline(0, color=NAVY, lw=1.4)
+            style(ax2, "Season", "Financed minus face value (ETB)")
+            ax2.yaxis.set_major_formatter(FMT)
+            fig2.tight_layout()
+            st.pyplot(fig2)
+            st.caption("Blue means the financed owner is ahead, because spreading the lease "
+                       "over a longer term costs less per season. Orange means they are "
+                       "behind, which is the interest.")
 
 # --------------------------------------------------------------------------- #
 #  Tab 2: promotion ladder
@@ -220,10 +245,31 @@ with tab2:
 # --------------------------------------------------------------------------- #
 with tab3:
     target = p.machines_for_coverage(coverage)
-    st.subheader(f"Reaching {coverage:.0%} of the Amhara harvest means {target:,} machines")
-
     df = simulate(p, seed_machines=seed, fleet_cap=target)
     yrs = df.year.values
+    reached = df.machines.iloc[-1]
+
+    if reached >= target * 0.99:
+        st.subheader(f"The fleet reaches {coverage:.0%} of the Amhara harvest, "
+                     f"which is {target:,} machines")
+        st.caption(f"A pilot of {seed} machines plus {external} externally financed "
+                   f"machines a year, with the promotion ladder running throughout.")
+    else:
+        st.subheader(f"The fleet grows to {reached:,.0f} machines by year {horizon}, "
+                     f"which is {df.coverage_pct.iloc[-1]:.1f}% of the Amhara harvest")
+        need = external_needed_for_target(p, seed, coverage, horizon)
+        if need >= 0:
+            st.warning(
+                f"**This does not reach your {coverage:.0%} target of {target:,} machines.** "
+                f"The promotion ladder compounds, but not fast enough on its own from a base "
+                f"of {seed}. Reaching {coverage:.0%} by year {horizon} needs about "
+                f"**{need} externally financed machines a year** from the partner fund and the "
+                f"lease facility. Set *Externally financed machines per year* to {need} in the "
+                f"sidebar to see that path.")
+        else:
+            st.warning(
+                f"**{coverage:.0%} is out of reach by year {horizon}** within the manufacturing "
+                f"capacity set in the sidebar. Raise the capacity, or extend the horizon.")
 
     fig, ax = plt.subplots(figsize=(11, 4.8))
     ax.bar(yrs, df.machines, 0.6, color=GREY, edgecolor=NAVY, lw=0.6, label="Machine owners")
@@ -249,27 +295,28 @@ with tab3:
     k[3].metric("Households served", f"{r.households_served:,.0f}")
     k[4].metric("Coverage", f"{r.coverage_pct:.1f}%")
 
-    if r.machines < target * 0.99:
-        need = external_needed_for_target(p, seed, coverage, horizon)
-        if need >= 0:
-            st.warning(
-                f"The pilot does not reach {coverage:.0%} on the promotion ladder alone. "
-                f"It needs about **{need} externally financed machines a year** to get "
-                f"there by year {horizon}. Set the sidebar slider to {need} to see it.")
-        else:
-            st.warning("This target is out of reach within the manufacturing capacity set.")
-
 # --------------------------------------------------------------------------- #
 #  Tab 4: data
 # --------------------------------------------------------------------------- #
 with tab4:
     st.subheader("Year by year")
-    st.dataframe(df.round(1), hide_index=True, width="stretch")
+    counts = ["machines", "owners", "millionaire_owners", "operators_employed",
+              "operators_promoted", "new_machines_external", "paid_operator_days",
+              "households_served", "people_supported", "cumulative_operator_days"]
+    money = ["operator_wage_bill_etb", "operator_earnings_each_etb", "owner_wealth_total_etb"]
+    fmt = {c: "{:,.0f}" for c in counts + money if c in df.columns}
+    fmt.update({c: "{:.1f}" for c in ["millionaire_share_pct", "coverage_pct"] if c in df.columns})
+    st.dataframe(df.style.format(fmt), hide_index=True, width="stretch")
+    st.caption("Machine and owner counts can be fractional because each year's cohort is an "
+               "expected value, not a headcount of individuals.")
     st.download_button("Download this projection (CSV)",
                        df.to_csv(index=False), "mms_projection.csv", "text/csv")
 
     st.subheader("Promotion ladder")
-    st.dataframe(lad.round(0), hide_index=True, width="stretch")
+    lfmt = {c: "{:,.0f}" for c in
+            ["stay_operator_gross_etb", "stay_operator_saved_etb", "promoted_total_etb",
+             "promoted_total_usd", "advantage_etb"] if c in lad.columns}
+    st.dataframe(lad.style.format(lfmt), hide_index=True, width="stretch")
     st.download_button("Download the ladder (CSV)",
                        lad.to_csv(index=False), "mms_promotion_ladder.csv", "text/csv")
 
